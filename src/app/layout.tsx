@@ -31,7 +31,7 @@ export default function RootLayout({
         <NextTopLoader color="var(--primary)" height={2} showSpinner={false} />
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

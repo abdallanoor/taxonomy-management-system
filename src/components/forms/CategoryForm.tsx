@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import type { CategoryData } from "@/lib/data";
 import { categorySchema, type CategoryFormSchema } from "@/lib/schemas";
 
-export interface CategoryFormData extends CategoryFormSchema {}
+export type CategoryFormData = CategoryFormSchema;
 
 interface CategoryFormProps {
   flatCategories: CategoryData[];

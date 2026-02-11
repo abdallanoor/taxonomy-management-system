@@ -10,7 +10,7 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { materialSchema, type MaterialFormSchema } from "@/lib/schemas";
 
-export interface MaterialFormData extends MaterialFormSchema {}
+export type MaterialFormData = MaterialFormSchema;
 
 interface MaterialFormProps {
   defaultValues?: Partial<MaterialFormData>;

@@ -33,7 +33,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -304,7 +303,7 @@ export function PreviewClient({
       const { name: catName, path: catPath } = findCategoryInfo(
         categories,
         data.categoryId && typeof data.categoryId === "object"
-          ? (data.categoryId as any)._id
+          ? (data.categoryId as { _id: string })._id
           : data.categoryId || null,
       );
 
@@ -322,7 +321,7 @@ export function PreviewClient({
         orderIndex: segments.length, // Append to end
         categoryId:
           data.categoryId && typeof data.categoryId === "object"
-            ? (data.categoryId as any)._id
+            ? (data.categoryId as { _id: string })._id
             : data.categoryId,
         categoryName: catName,
         categoryPath: paddedPath,

@@ -34,6 +34,39 @@ interface Category {
   children?: Category[];
 }
 
+// Flatten all categories with their paths for search
+function flattenCategories(
+  cats: Category[],
+  path: Category[] = [],
+): { category: Category; path: Category[] }[] {
+  const result: { category: Category; path: Category[] }[] = [];
+  for (const cat of cats) {
+    result.push({ category: cat, path });
+    if (cat.children && cat.children.length > 0) {
+      result.push(...flattenCategories(cat.children, [...path, cat]));
+    }
+  }
+  return result;
+}
+
+// Find category and its path in the tree
+function findCategoryPath(
+  cats: Category[],
+  targetId: string,
+  path: Category[] = [],
+): { category: Category; path: Category[] } | null {
+  for (const cat of cats) {
+    if (cat._id === targetId) {
+      return { category: cat, path };
+    }
+    if (cat.children && cat.children.length > 0) {
+      const found = findCategoryPath(cat.children, targetId, [...path, cat]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 interface CascadingCategorySelectorProps {
   categories: Category[];
   value: string | null;
@@ -57,26 +90,9 @@ export function CascadingCategorySelector({
   const [searchQuery, setSearchQuery] = React.useState("");
 
   // Flatten all categories with their paths for search
-  const flattenCategories = React.useCallback(
-    (
-      cats: Category[],
-      path: Category[] = [],
-    ): { category: Category; path: Category[] }[] => {
-      const result: { category: Category; path: Category[] }[] = [];
-      for (const cat of cats) {
-        result.push({ category: cat, path });
-        if (cat.children && cat.children.length > 0) {
-          result.push(...flattenCategories(cat.children, [...path, cat]));
-        }
-      }
-      return result;
-    },
-    [],
-  );
-
   const allCategories = React.useMemo(
     () => flattenCategories(categories),
-    [categories, flattenCategories],
+    [categories],
   );
 
   // Filter categories based on search
@@ -89,30 +105,6 @@ export function CascadingCategorySelector({
   }, [searchQuery, allCategories]);
 
   const isSearching = searchQuery.trim().length > 0;
-
-  // Find category and its path in the tree
-  const findCategoryPath = React.useCallback(
-    (
-      cats: Category[],
-      targetId: string,
-      path: Category[] = [],
-    ): { category: Category; path: Category[] } | null => {
-      for (const cat of cats) {
-        if (cat._id === targetId) {
-          return { category: cat, path };
-        }
-        if (cat.children && cat.children.length > 0) {
-          const found = findCategoryPath(cat.children, targetId, [
-            ...path,
-            cat,
-          ]);
-          if (found) return found;
-        }
-      }
-      return null;
-    },
-    [],
-  );
 
   // Restore navigation to selected category when popover opens
   const handleOpenChange = (isOpen: boolean) => {

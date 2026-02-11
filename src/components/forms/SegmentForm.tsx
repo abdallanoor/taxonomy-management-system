@@ -19,7 +19,7 @@ import type { MaterialData, CategoryTreeData } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { segmentSchema, type SegmentFormSchema } from "@/lib/schemas";
 
-export interface SegmentFormData extends SegmentFormSchema {}
+export type SegmentFormData = SegmentFormSchema;
 
 interface SegmentFormProps {
   materials?: MaterialData[];

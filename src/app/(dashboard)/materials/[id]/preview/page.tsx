@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { PreviewClient } from "@/components/materials/preview/PreviewClient";
-import { getCategoriesTree } from "@/lib/data";
+import { getCategoriesTree, getMaterialWithSegments } from "@/lib/data";
 
 export default async function PreviewPage({
   params,
@@ -9,18 +9,12 @@ export default async function PreviewPage({
 }) {
   const { id } = await params;
 
-  // Fetch materials segments via API (for consistency with previous step)
-  const host = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${host}/api/materials/${id}/segments`, {
-    cache: "no-store",
-  });
+  // Fetch material and its segments directly from DB
+  const data = await getMaterialWithSegments(id);
 
-  if (!res.ok) {
-    if (res.status === 404) notFound();
-    throw new Error("Failed to fetch material data");
+  if (!data) {
+    notFound();
   }
-
-  const { data } = await res.json();
 
   // Fetch Category Tree for the selector
   const categories = await getCategoriesTree();

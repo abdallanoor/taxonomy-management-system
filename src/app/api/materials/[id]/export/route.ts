@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
-import { Segment, Material, Category, ICategory } from '@/models';
+import { Segment, Material, ICategory } from '@/models';
 import ExcelJS from 'exceljs';
 
 export async function GET(
@@ -89,7 +89,7 @@ export async function GET(
 
     // 4. Process Data & Populate Rows
     segments.forEach((segment, index) => {
-      const row: any = {
+      const row: Record<string, string | number> = {
         recordId: index + 1, // Simple sequential ID
         paragraphText: segment.content,
         pageNumber: segment.pageNumber,
@@ -104,11 +104,11 @@ export async function GET(
       if (segment.category) {
         // Construct the full path: [...ancestors_sorted, current_category]
         const allNodes: ICategory[] = [segment.category, ...(segment.ancestors || [])];
-        const nodeMap = new Map<string, any>();
+        const nodeMap = new Map<string, ICategory>();
         allNodes.forEach(n => nodeMap.set(n._id.toString(), n));
 
         // Iterate from leaf upwards to root
-        const path: any[] = [];
+        const path: ICategory[] = [];
         let current = segment.category;
         while (current) {
           path.unshift(current);
