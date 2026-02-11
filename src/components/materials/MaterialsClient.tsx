@@ -43,6 +43,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { MaterialData } from "@/lib/data";
 import { MaterialForm, type MaterialFormData } from "../forms/MaterialForm";
+import { exportMaterialToExcel } from "@/lib/export";
 
 interface MaterialsClientProps {
   initialMaterials: MaterialData[];
@@ -143,30 +144,8 @@ export function MaterialsClient({ initialMaterials }: MaterialsClientProps) {
 
   const handleExport = async (material: MaterialData) => {
     setExportingId(material._id);
-    try {
-      const response = await fetch(`/api/materials/${material._id}/export`);
-
-      if (!response.ok) {
-        throw new Error("Export failed");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${material.title.replace(/[^a-z0-9\u0600-\u06FF]/gi, "_")}_Export.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success("تم تصدير الملف بنجاح");
-    } catch (error) {
-      console.error("Error exporting material:", error);
-      toast.error("فشل في تصدير الملف");
-    } finally {
-      setExportingId(null);
-    }
+    await exportMaterialToExcel(material._id, material.title);
+    setExportingId(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -279,7 +258,7 @@ export function MaterialsClient({ initialMaterials }: MaterialsClientProps) {
                               <HugeiconsIcon
                                 icon={Loading03Icon}
                                 size={16}
-                                className="animate-spin"
+                                className="animate-spin animation-duration-[2s]"
                               />
                             ) : (
                               <HugeiconsIcon icon={Download01Icon} size={16} />

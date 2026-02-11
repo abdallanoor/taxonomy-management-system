@@ -56,12 +56,14 @@ import {
   Delete02Icon,
   Cancel01Icon,
   PlusSignIcon,
+  Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { SegmentForm, SegmentFormData } from "@/components/forms/SegmentForm";
 import type { MaterialData } from "@/lib/data";
 import { useSegments } from "@/hooks/useSegments";
+import { exportMaterialToExcel } from "@/lib/export";
 
 interface Segment {
   _id: string;
@@ -422,30 +424,8 @@ export function PreviewClient({
     }
 
     setExporting(true);
-    try {
-      const response = await fetch(`/api/materials/${material._id}/export`);
-
-      if (!response.ok) {
-        throw new Error("Export failed");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${material.title.replace(/[^a-z0-9\u0600-\u06FF]/gi, "_")}_Export.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success("تم تصدير الملف بنجاح");
-    } catch (error) {
-      console.error("Error exporting material:", error);
-      toast.error("فشل في تصدير الملف");
-    } finally {
-      setExporting(false);
-    }
+    await exportMaterialToExcel(material._id, material.title);
+    setExporting(false);
   };
 
   return (
@@ -492,7 +472,15 @@ export function PreviewClient({
             disabled={exporting || hasChanges}
             variant="secondary"
           >
-            <HugeiconsIcon icon={Download01Icon} size={18} />
+            {exporting ? (
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                size={18}
+                className="animate-spin animation-duration-[2s]"
+              />
+            ) : (
+              <HugeiconsIcon icon={Download01Icon} size={18} />
+            )}
             <span>تصدير Excel</span>
           </Button>
 
