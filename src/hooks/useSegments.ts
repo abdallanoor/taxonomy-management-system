@@ -159,30 +159,6 @@ export function useSegments({
     }
   };
 
-  // Reorder segments
-  const reorderSegments = async (orderedIds: string[]) => {
-      // Optimistic update is handled by caller (DndContext) usually
-      // This is for persisting
-      try {
-          if (!materialId) return false;
-          
-          const res = await fetch(`/api/materials/${materialId}/reorder`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderedIds }),
-          });
-          
-          if (!res.ok) throw new Error("Failed");
-          
-          toast.success("تم حفظ الترتيب بنجاح");
-          return true;
-      } catch (error) {
-          console.error("Failed to save order:", error);
-          toast.error("فشل في حفظ الترتيب الجديد");
-          return false;
-      }
-  };
-
   return {
     segments,
     setSegments, // Exposed for drag & drop optimistic updates
@@ -191,6 +167,5 @@ export function useSegments({
     createSegment,
     updateSegment,
     deleteSegment,
-    reorderSegments
   };
 }

@@ -1,9 +1,15 @@
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
-export default function DashboardLayout({
+import { getMaterials } from "@/lib/data";
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardShell>{children}</DashboardShell>;
+  const materials = await getMaterials();
+
+  return (
+    <DashboardShell initialMaterials={materials}>{children}</DashboardShell>
+  );
 }

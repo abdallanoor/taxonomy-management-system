@@ -1,18 +1,5 @@
-import { getMaterials, getCategoriesTree, getRecentSegments } from "@/lib/data";
-import { DataEntryClient } from "@/components/dashboard/DataEntryClient";
+import { MaterialsList } from "@/components/materials/MaterialsList";
 
-export default async function DataEntryPage() {
-  const [materials, categories, segments] = await Promise.all([
-    getMaterials(),
-    getCategoriesTree(),
-    getRecentSegments(10),
-  ]);
-
-  return (
-    <DataEntryClient
-      initialMaterials={materials}
-      initialCategories={categories}
-      initialSegments={segments}
-    />
-  );
+export default async function Home() {
+  return <MaterialsList />;
 }

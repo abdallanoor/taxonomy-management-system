@@ -38,7 +38,6 @@ export interface PreviewSegmentData {
   _id: string;
   content: string;
   pageNumber: number;
-  orderIndex: number;
   categoryPath: string[];
   categoryName: string;
   categoryId: string | null;
@@ -113,7 +112,7 @@ export async function getMaterialWithSegments(id: string) {
       },
     },
     {
-      $sort: { orderIndex: 1, createdAt: 1 },
+      $sort: { pageNumber: 1, createdAt: 1 },
     },
     {
       $lookup: {
@@ -172,7 +171,6 @@ export async function getMaterialWithSegments(id: string) {
       _id: segment._id.toString(),
       content: segment.content,
       pageNumber: segment.pageNumber,
-      orderIndex: segment.orderIndex,
       categoryPath,
       categoryName: segment.category?.name || "",
       categoryId: segment.categoryId ? segment.categoryId.toString() : null,

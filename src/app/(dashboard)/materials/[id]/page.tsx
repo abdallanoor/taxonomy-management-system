@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PreviewClient } from "@/components/materials/preview/PreviewClient";
+import { PreviewClient } from "@/components/materials/PreviewClient";
 import { getCategoriesTree, getMaterialWithSegments } from "@/lib/data";
 
 export default async function PreviewPage({

@@ -138,9 +138,13 @@ export function CategoriesClient({
     }
   };
 
-  const confirmDelete = async () => {
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const confirmDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!deletingId) return;
 
+    setIsDeleting(true);
     try {
       const res = await fetch(`/api/categories/${deletingId}`, {
         method: "DELETE",
@@ -149,6 +153,7 @@ export function CategoriesClient({
       if (data.success) {
         toast.success("تم حذف التصنيف بنجاح");
         fetchCategories();
+        setDeletingId(null);
       } else {
         toast.error(data.error || "فشل في الحذف");
       }
@@ -156,7 +161,7 @@ export function CategoriesClient({
       console.error("Error deleting category:", error);
       toast.error("حدث خطأ أثناء الحذف");
     } finally {
-      setDeletingId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -411,7 +416,10 @@ export function CategoriesClient({
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+      <AlertDialog
+        open={!!deletingId}
+        onOpenChange={() => !isDeleting && setDeletingId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>هل أنت متأكد منذف هذا التصنيف؟</AlertDialogTitle>
@@ -421,9 +429,13 @@ export function CategoriesClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} variant="destructive">
-              حذف
+            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              variant="destructive"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "جاري الحذف..." : "حذف"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

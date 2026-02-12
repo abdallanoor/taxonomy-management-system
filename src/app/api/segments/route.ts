@@ -90,18 +90,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Auto-assign orderIndex: append to end
-    const maxOrderSegment = await Segment.findOne({ materialId: body.materialId })
-      .sort({ orderIndex: -1 })
-      .select('orderIndex')
-      .lean();
-    const nextOrderIndex = (maxOrderSegment?.orderIndex ?? -1) + 1;
-
     const segment = await Segment.create({
       materialId: body.materialId,
       content: body.content,
       pageNumber: body.pageNumber,
-      orderIndex: nextOrderIndex,
       categoryId: body.categoryId || null, // Allow null if not provided
     });
 
