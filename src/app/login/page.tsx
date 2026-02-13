@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,7 @@ export default function LoginPage() {
           description: "تأكد من اسم المستخدم وكلمة المرور",
         });
       } else {
+        toast.success("تم تسجيل الدخول بنجاح");
         router.push("/");
         router.refresh();
       }
