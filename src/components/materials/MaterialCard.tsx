@@ -12,12 +12,14 @@ interface MaterialCardProps {
   material: MaterialData;
   onEdit: (material: MaterialData) => void;
   onDelete: (id: string) => void;
+  isAdmin?: boolean;
 }
 
 export function MaterialCard({
   material,
   onEdit,
   onDelete,
+  isAdmin,
 }: MaterialCardProps) {
   return (
     <div className="group relative flex flex-col items-center justify-center p-8 rounded-2xl border border-foreground/15 bg-sidebar hover:border-foreground/25 transition-all duration-300 ease-out overflow-hidden">
@@ -50,35 +52,37 @@ export function MaterialCard({
       </div>
 
       {/* Actions - visible on hover */}
-      <div className="absolute top-2.5 left-2.5 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-[-8px] sm:group-hover:translate-y-0 transition-all duration-500 z-20">
-        <div className="flex items-center gap-1 p-1 bg-transparent backdrop-blur-xl rounded-full border border-foreground/10">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/20 rounded-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(material);
-            }}
-            title="تعديل"
-          >
-            <HugeiconsIcon icon={Edit02Icon} size={16} />
-          </Button>
-          <div className="w-px h-4 bg-foreground/10 mx-0.5" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/20 rounded-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(material._id);
-            }}
-            title="حذف"
-          >
-            <HugeiconsIcon icon={Delete02Icon} size={16} />
-          </Button>
+      {isAdmin && (
+        <div className="absolute top-2.5 left-2.5 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-[-8px] sm:group-hover:translate-y-0 transition-all duration-500 z-20">
+          <div className="flex items-center gap-1 p-1 bg-transparent backdrop-blur-xl rounded-full border border-foreground/10">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/20 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(material);
+              }}
+              title="تعديل"
+            >
+              <HugeiconsIcon icon={Edit02Icon} size={16} />
+            </Button>
+            <div className="w-px h-4 bg-foreground/10 mx-0.5" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/20 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(material._id);
+              }}
+              title="حذف"
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={16} />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

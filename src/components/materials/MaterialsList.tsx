@@ -35,9 +35,14 @@ import {
 
 import { useMaterials } from "@/context/materials-context";
 
+import { useSession } from "next-auth/react";
+
 export function MaterialsList() {
   const { materials, addMaterial, updateMaterial, deleteMaterial } =
     useMaterials();
+  const { data: session } = useSession();
+  const isAdmin = session?.user.isAdmin;
+
   const [loading, setLoading] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingMaterial, setEditingMaterial] =
@@ -113,42 +118,43 @@ export function MaterialsList() {
           <h2 className="text-xl font-semibold">المواد</h2>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
-              <HugeiconsIcon icon={Add01Icon} size={18} />
-              إضافة مادة
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingMaterial ? "تعديل المادة" : "إضافة مادة جديدة"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingMaterial
-                  ? "قم بتعديل بيانات المادة"
-                  : "أدخل بيانات المادة الجديدة (كتاب أو مرجع)"}
-              </DialogDescription>
-            </DialogHeader>
-            <MaterialForm
-              defaultValues={
-                editingMaterial
-                  ? {
-                      title: editingMaterial.title,
-                      author: editingMaterial.author,
-                    }
-                  : undefined
-              }
-              onSubmit={handleMaterialSubmit}
-              onCancel={() => setDialogOpen(false)}
-              isSubmitting={loading}
-              mode={editingMaterial ? "edit" : "create"}
-            />
-          </DialogContent>
-        </Dialog>
+        {isAdmin && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog}>
+                <HugeiconsIcon icon={Add01Icon} size={18} />
+                إضافة مادة
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingMaterial ? "تعديل المادة" : "إضافة مادة جديدة"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingMaterial
+                    ? "قم بتعديل بيانات المادة"
+                    : "أدخل بيانات المادة الجديدة (كتاب أو مرجع)"}
+                </DialogDescription>
+              </DialogHeader>
+              <MaterialForm
+                defaultValues={
+                  editingMaterial
+                    ? {
+                        title: editingMaterial.title,
+                        author: editingMaterial.author,
+                      }
+                    : undefined
+                }
+                onSubmit={handleMaterialSubmit}
+                onCancel={() => setDialogOpen(false)}
+                isSubmitting={loading}
+                mode={editingMaterial ? "edit" : "create"}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
-
       {/* Materials Grid */}
       {materials.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
@@ -167,6 +173,7 @@ export function MaterialsList() {
               material={material}
               onEdit={openEditDialog}
               onDelete={setDeletingId}
+              isAdmin={isAdmin}
             />
           ))}
         </div>

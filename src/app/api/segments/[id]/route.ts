@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Segment from '@/models/Segment';
 import mongoose from 'mongoose';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { User } from "@/models";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -11,6 +14,11 @@ interface Params {
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     await dbConnect();
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+
     const { id } = await params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -19,10 +27,26 @@ export async function GET(request: NextRequest, { params }: Params) {
         { status: 400 }
       );
     }
+    
+    // Verify user role
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser) {
+       return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
 
     const segment = await Segment.findById(id)
       .populate('materialId', 'title author')
       .populate('categoryId', 'name');
+    
+    if (segment) {
+       // Strict Access Control for GET
+       if (!currentUser.isAdmin) {
+          const hasAccess = currentUser.assignedMaterials.some((mId) => mId.toString() === segment.materialId._id.toString());
+          if (!hasAccess) {
+             return NextResponse.json({ success: false, error: "ممنوع" }, { status: 403 });
+          }
+       }
+    }
 
     if (!segment) {
       return NextResponse.json(
@@ -44,7 +68,19 @@ export async function GET(request: NextRequest, { params }: Params) {
 // PUT update segment
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+    
     await dbConnect();
+    
+    // Verify user role
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser) {
+       return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
 
@@ -53,6 +89,29 @@ export async function PUT(request: NextRequest, { params }: Params) {
         { success: false, error: 'معرّف غير صالح' },
         { status: 400 }
       );
+    }
+
+    // Check existence and permission BEFORE update
+    const existingSegment = await Segment.findById(id);
+    if (!existingSegment) {
+      return NextResponse.json({ success: false, error: 'الفقرة غير موجودة' }, { status: 404 });
+    }
+
+    // Strict Access Control for PUT
+    if (!currentUser.isAdmin) {
+       // Check access to the *current* material of the segment
+       const hasAccessToCurrent = currentUser.assignedMaterials.some((mId) => mId.toString() === existingSegment.materialId.toString());
+       if (!hasAccessToCurrent) {
+          return NextResponse.json({ success: false, error: "ممنوع" }, { status: 403 });
+       }
+       
+       // If trying to move to another material, check access to *target* material
+       if (body.materialId && body.materialId !== existingSegment.materialId.toString()) {
+          const hasAccessToTarget = currentUser.assignedMaterials.some((mId) => mId.toString() === body.materialId);
+          if (!hasAccessToTarget) {
+             return NextResponse.json({ success: false, error: "ممنوع - Cannot move to unassigned material" }, { status: 403 });
+          }
+       }
     }
 
     const updateData: Record<string, unknown> = {};
@@ -94,7 +153,19 @@ export async function PUT(request: NextRequest, { params }: Params) {
 // DELETE segment
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+
     await dbConnect();
+    
+    // Verify user role
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser) {
+       return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+
     const { id } = await params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -102,6 +173,20 @@ export async function DELETE(request: NextRequest, { params }: Params) {
         { success: false, error: 'معرّف غير صالح' },
         { status: 400 }
       );
+    }
+
+    // Check existence and permission BEFORE delete
+    const existingSegment = await Segment.findById(id);
+    if (!existingSegment) {
+      return NextResponse.json({ success: false, error: 'الفقرة غير موجودة' }, { status: 404 });
+    }
+
+    // Strict Access Control for DELETE
+    if (!currentUser.isAdmin) {
+       const hasAccess = currentUser.assignedMaterials.some((mId) => mId.toString() === existingSegment.materialId.toString());
+       if (!hasAccess) {
+          return NextResponse.json({ success: false, error: "ممنوع" }, { status: 403 });
+       }
     }
 
     const segment = await Segment.findByIdAndDelete(id);

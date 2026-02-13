@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.5",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -20,6 +21,7 @@
     "exceljs": "^4.4.0",
     "mongoose": "^9.1.6",
     "next": "16.1.6",
+    "next-auth": "^4.24.13",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.9.17",
     "radix-ui": "^1.4.3",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^20",
     "@types/react": "^19",

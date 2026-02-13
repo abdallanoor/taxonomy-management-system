@@ -352,7 +352,6 @@ export function PreviewClient({
           <span>تصدير Excel</span>
         </Button>
       </div>
-      {/* Drag & Drop Table */}
 
       <Table>
         <TableHeader>
@@ -370,16 +369,27 @@ export function PreviewClient({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {segments.map((segment, index) => (
-            <SegmentRow
-              key={segment._id}
-              segment={segment}
-              index={index}
-              onEdit={handleEdit}
-              onDelete={openDeleteDialog}
-              isEditing={editingSegment?._id === segment._id}
-            />
-          ))}
+          {segments.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={10}
+                className="text-center py-12 text-muted-foreground"
+              >
+                لا توجد فقرات بعد. قم بإضافة فقرة جديدة من النموذج أعلاه.
+              </TableCell>
+            </TableRow>
+          ) : (
+            segments.map((segment, index) => (
+              <SegmentRow
+                key={segment._id}
+                segment={segment}
+                index={index}
+                onEdit={handleEdit}
+                onDelete={openDeleteDialog}
+                isEditing={editingSegment?._id === segment._id}
+              />
+            ))
+          )}
         </TableBody>
       </Table>
 

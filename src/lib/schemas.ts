@@ -25,3 +25,35 @@ export const segmentSchema = z.object({
 });
 
 export type SegmentFormSchema = z.infer<typeof segmentSchema>;
+
+// Login Schema
+export const loginSchema = z.object({
+  username: z.string().min(1, "يرجى إدخال اسم المستخدم").trim(),
+  password: z.string().min(1, "يرجى إدخال كلمة المرور"),
+});
+
+export type LoginFormSchema = z.infer<typeof loginSchema>;
+
+// User Management Schema (Admin)
+// User Management Schema (Admin)
+const userBaseSchema = z.object({
+  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل").trim(),
+  isAdmin: z.boolean().default(false),
+  canEditCategories: z.boolean().default(false),
+  assignedMaterials: z.array(z.string()).default([]),
+});
+
+export const userFormSchema = userBaseSchema.extend({
+  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+});
+
+export const userUpdateSchema = userBaseSchema.extend({
+  password: z.union([
+    z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+    z.literal(""),
+    z.undefined()
+  ]).optional(),
+});
+
+export type UserFormSchema = z.infer<typeof userFormSchema>;
+export type UserUpdateSchema = z.infer<typeof userUpdateSchema>;

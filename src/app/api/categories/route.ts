@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Category from '@/models/Category';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { User } from "@/models";
 
 // GET all categories (as tree or flat)
 export async function GET(request: NextRequest) {
@@ -28,7 +31,22 @@ export async function GET(request: NextRequest) {
 // POST create new category
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+
     await dbConnect();
+
+    // Verify user role
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser || (!currentUser.isAdmin && !currentUser.canEditCategories)) {
+       return NextResponse.json(
+        { success: false, error: "غير مصرح لك بإنشاء تصنيفات" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     const category = await Category.create({

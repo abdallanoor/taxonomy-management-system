@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/sonner";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -86,7 +85,6 @@ export function DashboardShell({
             </header>
             <main className="flex-1 p-5">{children}</main>
           </SidebarInset>
-          <Toaster position="bottom-left" dir="rtl" />
         </SidebarProvider>
       </TooltipProvider>
     </MaterialsProvider>

@@ -3,6 +3,9 @@ import dbConnect from '@/lib/mongodb';
 import Category from '@/models/Category';
 import Segment from '@/models/Segment';
 import mongoose from 'mongoose';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { User } from "@/models";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -52,7 +55,19 @@ export async function GET(request: NextRequest, { params }: Params) {
 // PUT update category
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+    
     await dbConnect();
+
+    // Verify user role
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser || (!currentUser.isAdmin && !currentUser.canEditCategories)) {
+       return NextResponse.json({ success: false, error: "ممنوع" }, { status: 403 });
+    }
+
     const { id } = await params;
     const body = await request.json();
 
@@ -117,7 +132,19 @@ export async function PUT(request: NextRequest, { params }: Params) {
 // DELETE category
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 401 });
+    }
+
     await dbConnect();
+
+    // Verify user role
+    const currentUser = await User.findById(session.user.id);
+    if (!currentUser || (!currentUser.isAdmin && !currentUser.canEditCategories)) {
+       return NextResponse.json({ success: false, error: "ممنوع" }, { status: 403 });
+    }
+
     const { id } = await params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {

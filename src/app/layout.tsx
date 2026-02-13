@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import "./globals.css";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import NextTopLoader from "nextjs-toploader";
-import "./globals.css";
+import AuthProvider from "@/components/auth-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
@@ -29,14 +31,17 @@ export default function RootLayout({
     >
       <body className="antialiased font-sans" suppressHydrationWarning>
         <NextTopLoader color="var(--primary)" height={2} showSpinner={false} />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
+        <Toaster position="top-center" dir="rtl" />
       </body>
     </html>
   );

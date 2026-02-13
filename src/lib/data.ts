@@ -51,10 +51,16 @@ function serializeDoc<T>(doc: unknown): T {
 /**
  * Get all materials
  */
-export async function getMaterials(): Promise<MaterialData[]> {
+/**
+ * Get all materials (optionally filtered)
+ */
+export async function getMaterials(query: Record<string, unknown> = {}): Promise<MaterialData[]> {
   await dbConnect();
-  const materials = await Material.find().sort({ createdAt: -1 }).lean();
-  return serializeDoc<MaterialData[]>(materials);
+  // Ensure we lean() to get plain POJOs
+  const materials = await Material.find(query).sort({ createdAt: -1 }).lean();
+  
+  // Serialize because MongoDB ObjectIDs and Dates need to be strings for Server Components -> Client Components
+  return JSON.parse(JSON.stringify(materials));
 }
 
 /**
@@ -191,4 +197,28 @@ export async function getMaterialWithSegments(id: string) {
     },
     segments: processedSegments,
   });
+}
+
+export interface UserData {
+  _id: string;
+  username: string;
+  isAdmin: boolean;
+  canEditCategories: boolean;
+  assignedMaterials: string[];
+  createdAt: string;
+}
+
+/**
+ * Get all users
+ */
+export async function getUsers(): Promise<UserData[]> {
+  await dbConnect();
+  // We need to fetch users and manually map them because assignedMaterials are ObjectIds in DB
+  // but we want them as strings in our UserData interface for the client.
+  // We also need to be careful about not leaking passwords, even though our interface doesn't have it.
+  const users = await import("@/models/User").then((mod) =>
+    mod.default.find().sort({ createdAt: -1 }).lean()
+  );
+
+  return JSON.parse(JSON.stringify(users));
 }
