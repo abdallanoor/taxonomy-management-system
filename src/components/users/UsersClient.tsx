@@ -107,13 +107,14 @@ export function UsersClient({ initialUsers }: UsersClientProps) {
 
         router.refresh();
 
+        setIsOpen(false);
+
         // Optimistic update or refetch
         const newUsersRes = await fetch("/api/users");
         if (newUsersRes.ok) {
           const newUsers = await newUsersRes.json();
           setUsers(newUsers);
         }
-        setIsOpen(false);
       } else {
         const responseData = await res.json();
         toast.error(responseData.error || "حدث خطأ");

@@ -156,12 +156,12 @@ export function MaterialsList() {
         )}
       </div>
       {/* Materials Grid */}
-      {materials.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+      {materials.length !== 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
           <HugeiconsIcon
             icon={BookOpen02Icon}
             size={48}
-            className="pacity-50 mb-3"
+            className="opacity-50 mb-3"
           />
           <p>لا توجد مواد مسجلة بعد</p>
         </div>

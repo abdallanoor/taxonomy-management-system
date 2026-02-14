@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -314,13 +313,6 @@ export function CategoriesClient({
     );
   };
 
-  // Count total categories
-  const countCategories = (cats: CategoryTreeData[]): number => {
-    return cats.reduce((acc, cat) => {
-      return acc + 1 + (cat.children ? countCategories(cat.children) : 0);
-    }, 0);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -333,12 +325,16 @@ export function CategoriesClient({
           <h2 className="text-xl font-semibold">شجرة التصنيفات</h2>
         </div>
         <div className="flex items-center flex-wrap-reverse justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={expandAll}>
-            توسيع الكل
-          </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll}>
-            طي الكل
-          </Button>
+          {categories?.length > 0 && (
+            <>
+              <Button variant="outline" size="sm" onClick={expandAll}>
+                توسيع الكل
+              </Button>
+              <Button variant="outline" size="sm" onClick={collapseAll}>
+                طي الكل
+              </Button>
+            </>
+          )}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => openCreateDialog()}>
@@ -387,34 +383,24 @@ export function CategoriesClient({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>التصنيفات ({countCategories(categories)})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {categories.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <HugeiconsIcon
-                icon={FolderLibraryIcon}
-                size={48}
-                className="mb-4 opacity-50"
-              />
-              <p>لا توجد تصنيفات بعد</p>
-              <Button variant="link" onClick={() => openCreateDialog()}>
-                إضافة تصنيف جديد
-              </Button>
-            </div>
-          ) : (
-            <div className="max-h-[500px] overflow-auto">
-              <div className="space-y-1 min-w-max">
-                {categories.map((category) => (
-                  <TreeItem key={category._id} category={category} />
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {categories.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
+          <HugeiconsIcon
+            icon={FolderLibraryIcon}
+            size={48}
+            className="opacity-50 mb-3"
+          />
+          <p>لا توجد تصنيفات بعد</p>
+        </div>
+      ) : (
+        <div className="max-h-[600px] overflow-auto">
+          <div className="space-y-1 min-w-max">
+            {categories.map((category) => (
+              <TreeItem key={category._id} category={category} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <AlertDialog
         open={!!deletingId}
