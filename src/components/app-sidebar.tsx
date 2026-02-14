@@ -114,31 +114,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>المواد</SidebarGroupLabel>
-          <SidebarMenu>
-            {materials
-              .filter(
-                (material) =>
-                  session?.user.isAdmin ||
-                  session?.user.assignedMaterials.includes(material._id),
-              )
-              .map((material) => (
-                <SidebarMenuItem key={material._id}>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={material.title}
-                    isActive={pathname === `/materials/${material._id}`}
-                  >
-                    <Link href={`/materials/${material._id}`}>
-                      <HugeiconsIcon icon={BookOpen02Icon} strokeWidth={2} />
-                      <span>{material.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-          </SidebarMenu>
-        </SidebarGroup>
+        {materials.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>المواد</SidebarGroupLabel>
+            <SidebarMenu>
+              {materials
+                .filter(
+                  (material) =>
+                    session?.user.isAdmin ||
+                    session?.user.assignedMaterials.includes(material._id),
+                )
+                .map((material) => (
+                  <SidebarMenuItem key={material._id}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={material.title}
+                      isActive={pathname === `/materials/${material._id}`}
+                    >
+                      <Link href={`/materials/${material._id}`}>
+                        <HugeiconsIcon icon={BookOpen02Icon} strokeWidth={2} />
+                        <span>{material.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
