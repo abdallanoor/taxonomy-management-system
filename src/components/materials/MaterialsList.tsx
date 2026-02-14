@@ -156,7 +156,7 @@ export function MaterialsList() {
         )}
       </div>
       {/* Materials Grid */}
-      {materials.length !== 0 ? (
+      {materials.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
           <HugeiconsIcon
             icon={BookOpen02Icon}
