@@ -45,9 +45,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error("خطأ في تسجيل الدخول", {
-          description: "تأكد من اسم المستخدم وكلمة المرور",
-        });
+        toast.error(result.error);
         setLoading(false);
       } else {
         toast.success("تم تسجيل الدخول بنجاح");
