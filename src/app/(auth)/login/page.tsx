@@ -48,6 +48,7 @@ export default function LoginPage() {
         toast.error("خطأ في تسجيل الدخول", {
           description: "تأكد من اسم المستخدم وكلمة المرور",
         });
+        setLoading(false);
       } else {
         toast.success("تم تسجيل الدخول بنجاح");
         router.push("/");
@@ -55,7 +56,6 @@ export default function LoginPage() {
       }
     } catch {
       toast.error("حدث خطأ غير متوقع");
-    } finally {
       setLoading(false);
     }
   };
