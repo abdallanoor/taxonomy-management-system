@@ -54,10 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SegmentForm, SegmentFormData } from "@/components/forms/SegmentForm";
 import { useSegments } from "@/hooks/useSegments";
 import { useCategoriesTreeQuery } from "@/hooks/useCategories";
-import {
-  useMaterialPreview,
-  type SearchMode,
-} from "@/hooks/useMaterials";
+import { useMaterialPreview, type SearchMode } from "@/hooks/useMaterials";
 import { exportMaterialToExcel } from "@/lib/export";
 
 import {
@@ -824,7 +821,7 @@ export function PreviewClient({
               max={currentPagination.totalPages}
               defaultValue={currentPagination.page}
               key={currentPagination.page}
-              className="w-14 h-8 rounded-md border border-input bg-background px-2 text-center text-sm focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-14 h-8 rounded-2xl border border-input bg-background px-2 text-center text-sm focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = parseInt((e.target as HTMLInputElement).value);
