@@ -5,6 +5,7 @@ export interface ISegment extends Document {
   materialId: mongoose.Types.ObjectId;
   content: string;
   pageNumber: number;
+  order: number;
   categoryId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +28,11 @@ const SegmentSchema = new Schema<ISegment>(
       type: Number,
       required: [true, 'رقم الصفحة مطلوب'],
       min: [1, 'رقم الصفحة يجب أن يكون 1 أو أكثر'],
+    },
+    order: {
+      type: Number,
+      required: false,
+      default: null,
     },
     categoryId: {
       type: Schema.Types.ObjectId,

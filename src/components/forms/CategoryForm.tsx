@@ -23,7 +23,7 @@ export type CategoryFormData = CategoryFormSchema;
 interface CategoryFormProps {
   flatCategories: CategoryData[];
   defaultValues?: Partial<CategoryFormData>;
-  onSubmit: (data: CategoryFormData) => Promise<void>;
+  onSubmit: (data: CategoryFormData) => void | Promise<void>;
   onCancel?: () => void;
   isSubmitting?: boolean;
   mode?: "create" | "edit";
@@ -70,21 +70,6 @@ export function CategoryForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">اسم التصنيف</Label>
-            <Input
-              id="name"
-              placeholder="مثال: علوم القرآن"
-              className={cn(
-                errors.name &&
-                  "border-destructive focus-visible:ring-destructive",
-              )}
-              {...register("name")}
-            />
-            {errors.name && (
-              <p className="text-destructive text-sm">{errors.name.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="parent">التصنيف الأب (اختياري)</Label>
             <Controller
               name="parentId"
@@ -123,6 +108,21 @@ export function CategoryForm({
               <p className="text-destructive text-sm">
                 {errors.parentId.message}
               </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">اسم التصنيف</Label>
+            <Input
+              id="name"
+              placeholder="مثال: علوم القرآن"
+              className={cn(
+                errors.name &&
+                  "border-destructive focus-visible:ring-destructive",
+              )}
+              {...register("name")}
+            />
+            {errors.name && (
+              <p className="text-destructive text-sm">{errors.name.message}</p>
             )}
           </div>
         </div>

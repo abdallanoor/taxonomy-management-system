@@ -33,13 +33,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { useMaterials } from "@/context/materials-context";
+import { useMaterialsQuery, useMaterialMutations } from "@/hooks/useMaterials";
 
 import { useSession } from "next-auth/react";
 
 export function MaterialsList() {
-  const { materials, addMaterial, updateMaterial, deleteMaterial } =
-    useMaterials();
+  const { data: materials = [] } = useMaterialsQuery();
+  const {
+    addMaterialAsync: addMaterial,
+    updateMaterialAsync: updateMaterial,
+    deleteMaterialAsync: deleteMaterial,
+  } = useMaterialMutations();
   const { data: session } = useSession();
   const isAdmin = session?.user.isAdmin;
 
@@ -64,9 +68,12 @@ export function MaterialsList() {
     try {
       let success = false;
       if (editingMaterial) {
-        success = await updateMaterial(editingMaterial._id, {
-          title: formData.title,
-          author: formData.author,
+        success = await updateMaterial({
+          id: editingMaterial._id,
+          payload: {
+            title: formData.title,
+            author: formData.author,
+          },
         });
       } else {
         success = await addMaterial({

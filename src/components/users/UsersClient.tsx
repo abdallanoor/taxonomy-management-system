@@ -39,7 +39,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { UserForm } from "@/components/forms/UserForm";
 import type { UserFormSchema, UserUpdateSchema } from "@/lib/schemas";
-import { useMaterials } from "@/context/materials-context";
+import { useMaterialsQuery } from "@/hooks/useMaterials";
 import { UserData } from "@/lib/data";
 import { useRouter } from "next/navigation";
 
@@ -48,7 +48,7 @@ interface UsersClientProps {
 }
 
 export function UsersClient({ initialUsers }: UsersClientProps) {
-  const { materials } = useMaterials();
+  const { data: materials = [] } = useMaterialsQuery();
   const [users, setUsers] = useState<UserData[]>(initialUsers);
   const [isOpen, setIsOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);

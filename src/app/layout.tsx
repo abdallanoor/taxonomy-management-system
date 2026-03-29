@@ -4,6 +4,7 @@ import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import NextTopLoader from "nextjs-toploader";
 import AuthProvider from "@/components/auth-provider";
+import QueryProvider from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
@@ -32,14 +33,16 @@ export default function RootLayout({
       <body className="antialiased font-sans" suppressHydrationWarning>
         <NextTopLoader color="var(--primary)" height={2} showSpinner={false} />
         <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
+          <QueryProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </QueryProvider>
         </AuthProvider>
         <Toaster position="top-center" dir="rtl" />
       </body>

@@ -98,7 +98,10 @@ export async function getRecentSegments(limit: number = 10): Promise<SegmentData
 /**
  * Get a material and its segments with full category ancestry
  */
-export async function getMaterialWithSegments(id: string) {
+export async function getMaterialWithSegments(
+  id: string,
+  options?: { page?: number; limit?: number; search?: string; searchMode?: "text" | "page" | "all" }
+) {
   await dbConnect();
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -110,15 +113,75 @@ export async function getMaterialWithSegments(id: string) {
     return null;
   }
 
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const search = options?.search?.trim() || "";
+  const searchMode = options?.searchMode || "all";
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matchStage: any = {
+    materialId: new mongoose.Types.ObjectId(id),
+  };
+
+  if (search) {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const searchNumber = Number(search);
+
+    if (searchMode === "page") {
+      // Search only by page number
+      if (!isNaN(searchNumber)) {
+        matchStage.pageNumber = searchNumber;
+      }
+      // if not a number, return no results
+      else {
+        matchStage.pageNumber = -1;
+      }
+    } else if (searchMode === "text") {
+      // Search only in content text
+      matchStage.content = { $regex: escapedSearch, $options: "i" };
+    } else {
+      // "all" mode: search in both text and page number (original behavior)
+      if (!isNaN(searchNumber)) {
+        matchStage.$or = [
+          { content: { $regex: escapedSearch, $options: "i" } },
+          { pageNumber: searchNumber },
+        ];
+      } else {
+        matchStage.content = { $regex: escapedSearch, $options: "i" };
+      }
+    }
+  }
+
+  const totalCountResult = await Segment.aggregate([
+    { $match: matchStage },
+    { $count: "total" }
+  ]);
+  const totalSegments = totalCountResult[0]?.total || 0;
+
   // Fetch segments with category ancestry
   const segments = await Segment.aggregate([
     {
-      $match: {
-        materialId: new mongoose.Types.ObjectId(id),
+      $match: matchStage,
+    },
+    {
+      $addFields: {
+        effectiveOrder: {
+          $cond: {
+            if: { $eq: ["$order", null] },
+            then: { $toLong: "$createdAt" },
+            else: "$order",
+          },
+        },
       },
     },
     {
-      $sort: { pageNumber: 1, createdAt: 1 },
+      $sort: { pageNumber: 1, effectiveOrder: 1 },
+    },
+    {
+      $skip: (page - 1) * limit,
+    },
+    {
+      $limit: limit,
     },
     {
       $lookup: {
@@ -188,6 +251,12 @@ export async function getMaterialWithSegments(id: string) {
   return serializeDoc<{
     material: MaterialData;
     segments: PreviewSegmentData[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
   }>({
     material: {
       _id: mat._id.toString(),
@@ -196,6 +265,12 @@ export async function getMaterialWithSegments(id: string) {
       createdAt: mat.createdAt ? mat.createdAt.toISOString() : new Date().toISOString(),
     },
     segments: processedSegments,
+    pagination: {
+      total: totalSegments,
+      page,
+      limit,
+      totalPages: Math.ceil(totalSegments / limit),
+    },
   });
 }
 

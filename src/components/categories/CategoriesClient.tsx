@@ -9,17 +9,29 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   Delete02Icon,
+  Cancel01Icon,
   Edit02Icon,
   FolderLibraryIcon,
   ArrowDown01Icon,
   ArrowUp01Icon,
   FolderAddIcon,
+  Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import {
   AlertDialog,
@@ -34,137 +46,483 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { CategoryData, CategoryTreeData } from "@/lib/data";
 import { CategoryForm, type CategoryFormData } from "../forms/CategoryForm";
+import {
+  useCategoriesTreeQuery,
+  useFlatCategoriesQuery,
+  useCategoryMutations,
+} from "@/hooks/useCategories";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface CategoriesClientProps {
-  initialCategories: CategoryTreeData[];
-  initialFlatCategories: CategoryData[];
+// ─── Bulk Create Dialog ──────────────────────────────────────────────────────
+
+interface BulkCreateDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  flatCategories: CategoryData[];
+  defaultParentId?: string | null;
+  isPending: boolean;
+  onBulkCreate: (
+    categories: { name: string; parentId: string | null }[],
+  ) => void;
 }
 
-export function CategoriesClient({
-  initialCategories,
-  initialFlatCategories,
-}: CategoriesClientProps) {
-  const [categories, setCategories] = React.useState(initialCategories);
-  const [flatCategories, setFlatCategories] = React.useState(
-    initialFlatCategories,
+function BulkCreateDialog({
+  open,
+  onOpenChange,
+  flatCategories,
+  defaultParentId,
+  isPending,
+  onBulkCreate,
+}: BulkCreateDialogProps) {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [parentId, setParentId] = React.useState<string | null>(
+    defaultParentId ?? null,
   );
-  const [loading, setLoading] = React.useState(false);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editingCategory, setEditingCategory] =
-    React.useState<CategoryData | null>(null);
+  const [preview, setPreview] = React.useState<string[]>([]);
+  const [previewVisible, setPreviewVisible] = React.useState(false);
+
+  // Reset when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      if (textareaRef.current) textareaRef.current.value = "";
+      setParentId(defaultParentId ?? null);
+      setPreview([]);
+      setPreviewVisible(false);
+    }
+  }, [open, defaultParentId]);
+
+  /** Parse textarea value into unique non-empty names */
+  const parseNames = (raw: string): string[] => {
+    const names: string[] = [];
+    raw.split("\n").forEach((line) => {
+      line.split(/[,،]/).forEach((part) => {
+        const trimmed = part.trim();
+        if (trimmed) names.push(trimmed);
+      });
+    });
+    const seen = new Set<string>();
+    return names.filter((n) => {
+      const key = n.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const handlePreview = () => {
+    const raw = textareaRef.current?.value ?? "";
+    const names = parseNames(raw);
+    if (names.length === 0) {
+      toast.error("يرجى إدخال اسم تصنيف واحد على الأقل");
+      return;
+    }
+    setPreview(names);
+    setPreviewVisible(true);
+  };
+
+  const removeFromPreview = (index: number) => {
+    setPreview((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleConfirm = async () => {
+    if (preview.length === 0) {
+      toast.error("لا توجد تصنيفات للحفظ");
+      return;
+    }
+    const payload = preview.map((name) => ({ name, parentId }));
+    await onBulkCreate(payload);
+    onOpenChange(false);
+  };
+
+  return (
+    <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+      <DialogHeader>
+        <DialogTitle>إضافة تصنيفات جديدة</DialogTitle>
+        <DialogDescription>
+          أدخل أسماء التصنيفات مفصولة بفواصل أو في سطور منفصلة
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 py-2 px-1">
+        {/* Parent selector */}
+        <div className="space-y-2">
+          <Label htmlFor="bulk-parent">التصنيف الأب (اختياري)</Label>
+          <Select
+            value={parentId ?? "none"}
+            onValueChange={(v) => setParentId(v === "none" ? null : v)}
+          >
+            <SelectTrigger id="bulk-parent" className="max-w-full truncate">
+              <SelectValue placeholder="بدون أب (تصنيف رئيسي)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">بدون أب (تصنيف رئيسي)</SelectItem>
+              {flatCategories.map((cat) => (
+                <SelectItem key={cat._id} value={cat._id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Textarea input */}
+        <div className="space-y-2">
+          <Label htmlFor="bulk-names">أسماء التصنيفات</Label>
+          <Textarea
+            ref={textareaRef}
+            id="bulk-names"
+            placeholder="علوم القرآن، فقه العبادات، التفسير، الحديث النبوي"
+            defaultValue=""
+            onChange={() => {
+              if (previewVisible) setPreviewVisible(false);
+            }}
+            disabled={isPending}
+            rows={5}
+            className="min-h-10! resize-none font-medium"
+          />
+          <p className="text-xs text-muted-foreground">
+            يمكنك الفصل بالفاصلة (,) أو الفاصلة العربية (،) أو بسطر جديد
+          </p>
+        </div>
+
+        {/* Preview chips */}
+        {previewVisible && preview.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>معاينة ({preview.length} تصنيف)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => {
+                  setPreviewVisible(false);
+                  setPreview([]);
+                }}
+              >
+                تعديل
+              </Button>
+            </div>
+            <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
+              <div className="flex flex-wrap gap-2">
+                {preview.map((name, i) => (
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className="flex items-center gap-1 pl-1 pr-2 py-1 text-sm"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => removeFromPreview(i)}
+                      disabled={isPending}
+                      className="opacity-80 hover:opacity-100 transition-all rounded-sm focus:outline-none focus:ring-1 focus:ring-ring ml-1"
+                      aria-label={`حذف ${name}`}
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            {preview.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                لا توجد تصنيفات — أعد الكتابة
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <DialogFooter className="pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+          disabled={isPending}
+        >
+          إلغاء
+        </Button>
+        {previewVisible && preview.length > 0 ? (
+          <Button onClick={handleConfirm} disabled={isPending}>
+            {isPending ? "جاري الحفظ..." : `حفظ ${preview.length} تصنيف`}
+          </Button>
+        ) : (
+          <Button type="button" onClick={handlePreview} disabled={isPending}>
+            معاينة
+          </Button>
+        )}
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+// ─── Edit Single Category Dialog ─────────────────────────────────────────────
+
+interface EditDialogContentProps {
+  editingCategory: CategoryData;
+  flatCategories: CategoryData[];
+  isPending: boolean;
+  onSubmit: (formData: CategoryFormData) => void;
+  onClose: () => void;
+}
+
+function EditDialogContent({
+  editingCategory,
+  flatCategories,
+  isPending,
+  onSubmit,
+  onClose,
+}: EditDialogContentProps) {
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>تعديل التصنيف</DialogTitle>
+        <DialogDescription>قم بتعديل بيانات التصنيف</DialogDescription>
+      </DialogHeader>
+      <CategoryForm
+        flatCategories={flatCategories}
+        defaultValues={{
+          name: editingCategory.name,
+          parentId: editingCategory.parentId || null,
+        }}
+        onSubmit={onSubmit}
+        onCancel={onClose}
+        isSubmitting={isPending}
+        mode="edit"
+        editingCategoryId={editingCategory._id}
+      />
+    </DialogContent>
+  );
+}
+
+// ─── TreeItem (outside parent — never re-created on re-render) ───────────────
+
+interface TreeItemProps {
+  category: CategoryTreeData;
+  level?: number;
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
+  onOpenCreate: (category: CategoryData) => void;
+  onOpenEdit: (category: CategoryData) => void;
+  onDelete: (id: string) => void;
+}
+
+const TreeItem = React.memo(function TreeItem({
+  category,
+  level = 0,
+  expandedIds,
+  onToggle,
+  onOpenCreate,
+  onOpenEdit,
+  onDelete,
+}: TreeItemProps) {
+  const hasChildren = category.children && category.children.length > 0;
+  const isExpanded = expandedIds.has(category._id);
+  const isRoot = level === 0;
+
+  return (
+    <div className={cn(isRoot ? "" : "pr-4 border-r-2 border-border mr-3")}>
+      <div
+        className={cn(
+          "flex items-center gap-2 py-2.5 px-3 rounded-lg group transition-colors select-none cursor-pointer",
+          isRoot ? "bg-muted/80 hover:bg-muted" : "hover:bg-muted/40",
+        )}
+        onClick={() => hasChildren && onToggle(category._id)}
+      >
+        {hasChildren ? (
+          <div className="h-6 w-6 shrink-0 flex items-center justify-center">
+            <HugeiconsIcon
+              icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon}
+              size={14}
+            />
+          </div>
+        ) : (
+          <div className="w-6 h-6 flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
+          </div>
+        )}
+
+        <HugeiconsIcon
+          icon={FolderLibraryIcon}
+          size={18}
+          className={cn(
+            "shrink-0",
+            isRoot ? "text-foreground" : "text-muted-foreground",
+          )}
+        />
+
+        <span
+          className={cn(
+            "flex-1 truncate",
+            isRoot ? "font-semibold" : "font-medium text-muted-foreground",
+          )}
+        >
+          {category.name}
+        </span>
+
+        {hasChildren && (
+          <Badge variant="outline" className="text-xs shrink-0">
+            {category.children!.length}
+          </Badge>
+        )}
+
+        {/* Action buttons */}
+        <div
+          className="flex items-center gap-0.5 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() =>
+              onOpenCreate({
+                _id: category._id,
+                name: category.name,
+                parentId: category.parentId,
+              })
+            }
+            disabled={level >= 5}
+            title={
+              level >= 5
+                ? "تم الوصول للحد الأقصى للمستويات"
+                : "إضافة تصنيف فرعي"
+            }
+          >
+            <HugeiconsIcon icon={FolderAddIcon} size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() =>
+              onOpenEdit({
+                _id: category._id,
+                name: category.name,
+                parentId: category.parentId,
+              })
+            }
+          >
+            <HugeiconsIcon icon={Edit02Icon} size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={() => onDelete(category._id)}
+          >
+            <HugeiconsIcon icon={Delete02Icon} size={14} />
+          </Button>
+        </div>
+      </div>
+
+      {hasChildren && isExpanded && (
+        <div className="mt-1 space-y-1 pr-2">
+          {category.children!.map((child) => (
+            <TreeItem
+              key={child._id}
+              category={child}
+              level={level + 1}
+              expandedIds={expandedIds}
+              onToggle={onToggle}
+              onOpenCreate={onOpenCreate}
+              onOpenEdit={onOpenEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
+
+// ─── Main CategoriesClient ───────────────────────────────────────────────────
+
+export function CategoriesClient() {
+  const { data: categories = [], isLoading: isTreeLoading } =
+    useCategoriesTreeQuery();
+  const { data: flatCategories = [] } = useFlatCategoriesQuery();
+  const {
+    createCategory,
+    bulkCreateCategories,
+    updateCategory,
+    deleteCategory,
+    isPending,
+  } = useCategoryMutations();
+
+  // Dialog state: null = closed, "bulk-create" = create mode, CategoryData = edit mode
+  const [dialogMode, setDialogMode] = React.useState<
+    null | "bulk-create" | CategoryData
+  >(null);
+  const [defaultParentId, setDefaultParentId] = React.useState<string | null>(
+    null,
+  );
+
   const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const fetchCategories = async () => {
-    try {
-      // Fetch tree structure
-      const treeRes = await fetch("/api/categories?format=tree");
-      const treeData = await treeRes.json();
-      if (treeData.success) {
-        setCategories(treeData.data);
-      }
+  const openCreateDialog = React.useCallback(
+    (parentCategory?: CategoryData) => {
+      setDefaultParentId(parentCategory?._id ?? null);
+      setDialogMode("bulk-create");
+    },
+    [],
+  );
 
-      // Fetch flat list for parent selection
-      const flatRes = await fetch("/api/categories");
-      const flatData = await flatRes.json();
-      if (flatData.success) {
-        setFlatCategories(flatData.data);
-      }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
+  const openEditDialog = React.useCallback((category: CategoryData) => {
+    setDefaultParentId(null);
+    setDialogMode(category);
+  }, []);
 
-  const openCreateDialog = (parentCategory?: CategoryData) => {
-    setEditingCategory(null);
-    if (parentCategory) {
-      // Create a temporary category-like object for parent selection
-      setEditingCategory({
-        _id: "",
-        name: "",
-        parentId: parentCategory._id,
-      } as CategoryData);
-    }
-    setDialogOpen(true);
-  };
+  const closeDialog = React.useCallback(() => setDialogMode(null), []);
 
-  const openEditDialog = (category: CategoryData) => {
-    setEditingCategory(category);
-    setDialogOpen(true);
-  };
-
-  const handleSubmit = async (formData: CategoryFormData) => {
-    if (!formData.name.trim()) {
-      toast.error("يرجى إدخال اسم التصنيف");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const url =
-        editingCategory && editingCategory._id
-          ? `/api/categories/${editingCategory._id}`
-          : "/api/categories";
-      const method = editingCategory && editingCategory._id ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          parentId: formData.parentId || null,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        toast.success(
-          editingCategory && editingCategory._id
-            ? "تم تحديث التصنيف بنجاح"
-            : "تم إضافة التصنيف بنجاح",
-        );
-        setDialogOpen(false);
-        setEditingCategory(null);
-        fetchCategories();
+  const handleBulkCreate = React.useCallback(
+    (payload: { name: string; parentId: string | null }[]) => {
+      if (payload.length === 1) {
+        createCategory({
+          name: payload[0].name,
+          parentId: payload[0].parentId,
+        });
       } else {
-        toast.error(data.error || "فشل في حفظ التصنيف");
+        bulkCreateCategories(payload);
       }
-    } catch (error) {
-      console.error("Error saving category:", error);
-      toast.error("حدث خطأ أثناء الحفظ");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [createCategory, bulkCreateCategories],
+  );
 
-  const [isDeleting, setIsDeleting] = React.useState(false);
+  const handleEditSubmit = React.useCallback(
+    (formData: CategoryFormData) => {
+      const editing = dialogMode as CategoryData;
+      if (!formData.name.trim()) {
+        toast.error("يرجى إدخال اسم التصنيف");
+        return;
+      }
+      updateCategory(
+        {
+          id: editing._id,
+          payload: {
+            name: formData.name,
+            parentId: formData.parentId || null,
+          },
+        },
+        {
+          onSuccess: () => closeDialog(),
+        },
+      );
+    },
+    [dialogMode, updateCategory, closeDialog],
+  );
 
-  const confirmDelete = async (e: React.MouseEvent) => {
+  const confirmDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!deletingId) return;
-
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`/api/categories/${deletingId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("تم حذف التصنيف بنجاح");
-        fetchCategories();
-        setDeletingId(null);
-      } else {
-        toast.error(data.error || "فشل في الحذف");
-      }
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      toast.error("حدث خطأ أثناء الحذف");
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteCategory(deletingId, {
+      onSuccess: () => setDeletingId(null),
+    });
   };
 
-  const toggleExpand = (id: string) => {
+  const toggleExpand = React.useCallback((id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -174,7 +532,7 @@ export function CategoriesClient({
       }
       return next;
     });
-  };
+  }, []);
 
   const expandAll = () => {
     const allIds = new Set<string>();
@@ -194,124 +552,12 @@ export function CategoriesClient({
     setExpandedIds(new Set());
   };
 
-  // Recursive tree item component
-  const TreeItem = ({
-    category,
-    level = 0,
-  }: {
-    category: CategoryTreeData;
-    level?: number;
-  }) => {
-    const hasChildren = category.children && category.children.length > 0;
-    const isExpanded = expandedIds.has(category._id);
-    const isRoot = level === 0;
+  const handleDelete = React.useCallback((id: string) => {
+    setDeletingId(id);
+  }, []);
 
-    return (
-      <div className={cn(isRoot ? "" : "pr-4 border-r-2 border-border mr-3")}>
-        <div
-          className={cn(
-            "flex items-center gap-2 py-2.5 px-3 rounded-lg group transition-colors select-none cursor-pointer",
-            isRoot ? "bg-muted/80 hover:bg-muted" : "hover:bg-muted/40",
-          )}
-          onClick={() => hasChildren && toggleExpand(category._id)}
-        >
-          {hasChildren ? (
-            <div className="h-6 w-6 shrink-0 flex items-center justify-center">
-              <HugeiconsIcon
-                icon={isExpanded ? ArrowUp01Icon : ArrowDown01Icon}
-                size={14}
-              />
-            </div>
-          ) : (
-            <div className="w-6 h-6 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
-            </div>
-          )}
-
-          <HugeiconsIcon
-            icon={FolderLibraryIcon}
-            size={18}
-            className={cn(
-              "shrink-0",
-              isRoot ? "text-foreground" : "text-muted-foreground",
-            )}
-          />
-
-          <span
-            className={cn(
-              "flex-1 truncate",
-              isRoot ? "font-semibold" : "font-medium text-muted-foreground",
-            )}
-          >
-            {category.name}
-          </span>
-
-          {hasChildren && (
-            <Badge variant="outline" className="text-xs shrink-0">
-              {category.children!.length}
-            </Badge>
-          )}
-
-          {/* Action buttons - stop propagation to prevent expand/collapse */}
-          <div
-            className="flex items-center gap-0.5 shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() =>
-                openCreateDialog({
-                  _id: category._id,
-                  name: category.name,
-                  parentId: category.parentId,
-                })
-              }
-              disabled={level >= 5}
-              title={
-                level >= 5
-                  ? "تم الوصول للحد الأقصى للمستويات"
-                  : "إضافة تصنيف فرعي"
-              }
-            >
-              <HugeiconsIcon icon={FolderAddIcon} size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() =>
-                openEditDialog({
-                  _id: category._id,
-                  name: category.name,
-                  parentId: category.parentId,
-                })
-              }
-            >
-              <HugeiconsIcon icon={Edit02Icon} size={14} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={() => setDeletingId(category._id)}
-            >
-              <HugeiconsIcon icon={Delete02Icon} size={14} />
-            </Button>
-          </div>
-        </div>
-
-        {hasChildren && isExpanded && (
-          <div className="mt-1 space-y-1 pr-2">
-            {category.children!.map((child) => (
-              <TreeItem key={child._id} category={child} level={level + 1} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
+  const isEditMode = dialogMode !== null && dialogMode !== "bulk-create";
+  const isBulkCreateMode = dialogMode === "bulk-create";
 
   return (
     <div className="space-y-6">
@@ -335,55 +581,63 @@ export function CategoriesClient({
               </Button>
             </>
           )}
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+
+          {/* Single Dialog used for both create (bulk) and edit (single) */}
+          <Dialog
+            open={dialogMode !== null}
+            onOpenChange={(open) => !open && closeDialog()}
+          >
             <DialogTrigger asChild>
               <Button onClick={() => openCreateDialog()}>
                 <HugeiconsIcon icon={FolderAddIcon} size={18} />
                 إضافة تصنيف
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCategory && editingCategory._id
-                    ? "تعديل التصنيف"
-                    : "إضافة تصنيف جديد"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingCategory && editingCategory._id
-                    ? "قم بتعديل بيانات التصنيف"
-                    : "أدخل اسم التصنيف الجديد واختر التصنيف الأب (اختياري)"}
-                </DialogDescription>
-              </DialogHeader>
-              <CategoryForm
+
+            {isBulkCreateMode && (
+              <BulkCreateDialog
+                open={isBulkCreateMode}
+                onOpenChange={(open) => !open && closeDialog()}
                 flatCategories={flatCategories}
-                defaultValues={
-                  editingCategory && editingCategory._id
-                    ? {
-                        name: editingCategory.name,
-                        parentId: editingCategory.parentId || null,
-                      }
-                    : editingCategory
-                      ? {
-                          name: "",
-                          parentId: editingCategory.parentId || null,
-                        }
-                      : undefined
-                }
-                onSubmit={handleSubmit}
-                onCancel={() => setDialogOpen(false)}
-                isSubmitting={loading}
-                mode={
-                  editingCategory && editingCategory._id ? "edit" : "create"
-                }
-                editingCategoryId={editingCategory?._id}
+                defaultParentId={defaultParentId}
+                isPending={isPending}
+                onBulkCreate={handleBulkCreate}
               />
-            </DialogContent>
+            )}
+
+            {isEditMode && (
+              <EditDialogContent
+                editingCategory={dialogMode as CategoryData}
+                flatCategories={flatCategories}
+                isPending={isPending}
+                onSubmit={handleEditSubmit}
+                onClose={closeDialog}
+              />
+            )}
           </Dialog>
         </div>
       </div>
 
-      {categories.length === 0 ? (
+      {isTreeLoading ? (
+        <div className="space-y-3 mt-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 py-3 px-4 rounded-lg bg-muted/30 border border-muted/50"
+            >
+              <Skeleton className="h-6 w-6" />
+              <Skeleton className="h-5 w-5" />
+              <Skeleton className="h-4 w-1/4" />
+              <div className="flex-1" />
+              <div className="flex items-center gap-1">
+                <Skeleton className="h-7 w-7" />
+                <Skeleton className="h-7 w-7" />
+                <Skeleton className="h-7 w-7" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : categories.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-2xl">
           <HugeiconsIcon
             icon={FolderLibraryIcon}
@@ -396,7 +650,15 @@ export function CategoriesClient({
         <div className="max-h-[600px] overflow-auto">
           <div className="space-y-1 min-w-max">
             {categories.map((category) => (
-              <TreeItem key={category._id} category={category} />
+              <TreeItem
+                key={category._id}
+                category={category}
+                expandedIds={expandedIds}
+                onToggle={toggleExpand}
+                onOpenCreate={openCreateDialog}
+                onOpenEdit={openEditDialog}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         </div>
@@ -404,24 +666,26 @@ export function CategoriesClient({
 
       <AlertDialog
         open={!!deletingId}
-        onOpenChange={() => !isDeleting && setDeletingId(null)}
+        onOpenChange={() => !isPending && setDeletingId(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد منذف هذا التصنيف؟</AlertDialogTitle>
+            <AlertDialogTitle>
+              هل أنت متأكد من حذف هذا التصنيف؟
+            </AlertDialogTitle>
             <AlertDialogDescription>
               هذا الإجراء لا يمكن التراجع عنه. سيتم حذف التصنيف وجميع البيانات
               المرتبطة به.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>إلغاء</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               variant="destructive"
-              disabled={isDeleting}
+              disabled={isPending}
             >
-              {isDeleting ? "جاري الحذف..." : "حذف"}
+              {isPending ? "جاري الحذف..." : "حذف"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

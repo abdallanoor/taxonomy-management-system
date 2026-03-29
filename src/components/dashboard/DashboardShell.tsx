@@ -19,7 +19,7 @@ import {
   Moon02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { MaterialsProvider } from "@/context/materials-context";
+import { useMaterialsQuery } from "@/hooks/useMaterials";
 import type { MaterialData } from "@/lib/data";
 
 const navigation = [
@@ -50,12 +50,14 @@ export function DashboardShell({
     setMounted(true);
   }, []);
 
+  useMaterialsQuery(initialMaterials);
+
   if (!mounted) {
     return <div className="min-h-screen bg-background" />;
   }
 
   return (
-    <MaterialsProvider initialMaterials={initialMaterials}>
+    <>
       <TooltipProvider>
         <SidebarProvider>
           <AppSidebar side="right" collapsible="icon" />
@@ -87,6 +89,6 @@ export function DashboardShell({
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>
-    </MaterialsProvider>
+    </>
   );
 }

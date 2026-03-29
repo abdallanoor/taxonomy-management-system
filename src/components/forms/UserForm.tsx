@@ -14,7 +14,7 @@ import {
   type UserFormSchema,
   type UserUpdateSchema,
 } from "@/lib/schemas";
-import { useMaterials } from "@/context/materials-context";
+import { useMaterialsQuery } from "@/hooks/useMaterials";
 import { useEffect } from "react";
 
 interface UserFormProps {
@@ -30,7 +30,7 @@ export function UserForm({
   isSubmitting = false,
   isEditing = false,
 }: UserFormProps) {
-  const { materials } = useMaterials();
+  const { data: materials = [] } = useMaterialsQuery();
 
   const {
     register,

@@ -1,16 +1,9 @@
-import { getCategoriesTree, getCategories } from "@/lib/data";
 import { CategoriesClient } from "@/components/categories/CategoriesClient";
 
-export default async function CategoriesPage() {
-  const [categoriesTree, flatCategories] = await Promise.all([
-    getCategoriesTree(),
-    getCategories(),
-  ]);
-
+export default function CategoriesPage() {
   return (
-    <CategoriesClient
-      initialCategories={categoriesTree}
-      initialFlatCategories={flatCategories}
-    />
+    <>
+      <CategoriesClient />
+    </>
   );
 }

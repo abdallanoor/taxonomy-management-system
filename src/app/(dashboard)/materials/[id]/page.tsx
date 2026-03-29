@@ -1,18 +1,22 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Types } from "mongoose";
 import { PreviewClient } from "@/components/materials/PreviewClient";
-import { getCategoriesTree, getMaterialWithSegments } from "@/lib/data";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import { User } from "@/models";
 
-export default async function PreviewPage({
-  params,
-}: {
+export default async function PreviewPage(props: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { id } = await params;
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const { id } = params;
+
+  const page =
+    typeof searchParams.page === "string" ? parseInt(searchParams.page) : 1;
+  const search = typeof searchParams.q === "string" ? searchParams.q : "";
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -47,21 +51,11 @@ export default async function PreviewPage({
     );
   }
 
-  // Fetch material and its segments directly from DB
-  const data = await getMaterialWithSegments(id);
-
-  if (!data) {
-    notFound();
-  }
-
-  // Fetch Category Tree for the selector
-  const categories = await getCategoriesTree();
-
   return (
     <PreviewClient
-      material={data.material}
-      initialSegments={data.segments}
-      categories={categories}
+      materialId={id}
+      initialPage={page}
+      initialSearch={search}
     />
   );
 }

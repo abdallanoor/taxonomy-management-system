@@ -21,7 +21,7 @@ import {
   FolderLibraryIcon,
 } from "@hugeicons/core-free-icons";
 import { usePathname } from "next/navigation";
-import { useMaterials } from "@/context/materials-context";
+import { useMaterialsQuery } from "@/hooks/useMaterials";
 
 const data = {
   navMain: [
@@ -44,7 +44,7 @@ import { UserGroupIcon, Logout03Icon } from "@hugeicons/core-free-icons";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { materials } = useMaterials();
+  const { data: materials = [] } = useMaterialsQuery();
   const { data: session } = useSession();
 
   return (

@@ -116,9 +116,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const updateData: Record<string, unknown> = {};
     if (body.content !== undefined) updateData.content = body.content;
-    if (body.pageNumber !== undefined) updateData.pageNumber = body.pageNumber;
     if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
     if (body.materialId !== undefined) updateData.materialId = body.materialId;
+
+    if (body.pageNumber !== undefined) {
+      updateData.pageNumber = body.pageNumber;
+      if (body.pageNumber !== existingSegment.pageNumber) {
+        // If moving to a new page, append it to the bottom by giving it a fresh timestamp order
+        updateData.order = Date.now();
+      }
+    }
 
     const segment = await Segment.findByIdAndUpdate(id, updateData, {
       new: true,

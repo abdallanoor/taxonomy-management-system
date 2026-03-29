@@ -30,7 +30,18 @@ export async function GET(
         } 
       },
       {
-        $sort: { orderIndex: 1, pageNumber: 1 } as Record<string, 1 | -1>,
+        $addFields: {
+          effectiveOrder: {
+            $cond: {
+              if: { $eq: ["$order", null] },
+              then: { $toLong: "$createdAt" },
+              else: "$order",
+            },
+          },
+        },
+      },
+      {
+        $sort: { pageNumber: 1, effectiveOrder: 1 } as Record<string, 1 | -1>,
       },
       {
         $lookup: {

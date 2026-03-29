@@ -55,10 +55,16 @@ export async function GET(request: NextRequest) {
     }
 
     const total = await Segment.countDocuments(query);
+    // Define sort logic: if we're filtering by material, page number is the priority.
+    // We utilize the same 'order' or creation fallback logic as in preview.
+    const sortParams: Record<string, 1 | -1> = materialId 
+      ? { pageNumber: 1, order: 1, createdAt: 1 } 
+      : { createdAt: -1 };
+
     const segments = await Segment.find(query)
       .populate('materialId', 'title author')
       .populate('categoryId', 'name')
-      .sort({ createdAt: -1 })
+      .sort(sortParams)
       .skip((page - 1) * limit)
       .limit(limit);
 
@@ -138,11 +144,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Use the current timestamp as the initial order, so new segments inherently
+    // sort *after* all existing segments (whose fallback order is their creation time)
+    const nextOrder = Date.now();
+
     const segment = await Segment.create({
       materialId: body.materialId,
       content: body.content,
       pageNumber: body.pageNumber,
       categoryId: body.categoryId || null, // Allow null if not provided
+      order: nextOrder,
     });
 
     // Populate the response
