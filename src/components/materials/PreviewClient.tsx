@@ -56,6 +56,7 @@ import { useSegments } from "@/hooks/useSegments";
 import { useCategoriesTreeQuery } from "@/hooks/useCategories";
 import { useMaterialPreview, type SearchMode } from "@/hooks/useMaterials";
 import { exportMaterialToExcel } from "@/lib/export";
+import { MaterialImportDialog } from "@/components/materials/MaterialImportDialog";
 
 import {
   useReactTable,
@@ -63,6 +64,7 @@ import {
   flexRender,
   createColumnHelper,
 } from "@tanstack/react-table";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Segment {
   _id: string;
@@ -119,12 +121,13 @@ export function PreviewClient({
   const [searchMode, setSearchMode] = React.useState<SearchMode>("all");
 
   // Client side fetch hooks
-  const { data, isLoading, isPlaceholderData } = useMaterialPreview(
+  const { data, isLoading, isPlaceholderData, isFetching } = useMaterialPreview(
     materialId,
     page,
     searchQuery,
     searchMode,
   );
+  const queryClient = useQueryClient();
   const { data: categories = [] } = useCategoriesTreeQuery();
 
   const material = data?.material;
@@ -442,6 +445,15 @@ export function PreviewClient({
     setExporting(false);
   };
 
+  const handleImported = () => {
+    setPage(1);
+    setSearchQuery("");
+    setInputValue("");
+    queryClient.invalidateQueries({
+      queryKey: ["materials", materialId, "preview"],
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -611,6 +623,11 @@ export function PreviewClient({
 
         {/* Export */}
         <div className="flex items-center gap-2">
+          <MaterialImportDialog
+            materialId={materialId}
+            disabled={!material}
+            onImported={handleImported}
+          />
           <Button
             onClick={handleExport}
             disabled={exporting || !material}
@@ -630,9 +647,16 @@ export function PreviewClient({
         </div>
       </div>
 
+      {(isLoading || isPlaceholderData || isFetching) && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+          <HugeiconsIcon icon={Loading03Icon} size={16} className="animate-spin" />
+          جاري تحديث الفقرات...
+        </div>
+      )}
+
       <div
         className={
-          isPlaceholderData || isLoading
+          isPlaceholderData || isLoading || isFetching
             ? "opacity-50 pointer-events-none transition-opacity duration-200"
             : "transition-opacity duration-200"
         }
